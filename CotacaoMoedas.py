@@ -1,20 +1,78 @@
 import tkinter as tk
 from tkinter import ttk
 from tkcalendar import DateEntry
+from tkinter.filedialog import askopenfilename
+import pandas as pd
+import requests
+from datetime import datetime
+import numpy as np
 
-lista_moedas = ['USD', 'EUR']
+
+requisicao = requests.get(f'https://economia.awesomeapi.com.br/json/all')
+#https://docs.awesomeapi.com.br/api-de-moedas
+dicionario_moedas = requisicao.json()
+
+lista_moedas = list(dicionario_moedas.keys())
 
 
 def pegar_cotacao():
-    pass
+    moeda = combobox_selecionarmoeda.get()
+    data_cotacao = calendario_moeda.get()
+    ano = data_cotacao[-4:]
+    mes = data_cotacao[3:5]
+    dia = data_cotacao[:2]
+    link = f'https://economia.awesomeapi.com.br/json/daily/{moeda}-BRL/?start_date={ano}{mes}{dia}&end_date={ano}{mes}{dia}'
+    requisicao_moeda = requests.get(link)
+    cotacao = requisicao_moeda.json()
+    valor_moeda = cotacao[0]['bid']
+    label_textocotacao['text'] = f'A cotação da moeda {moeda} no dia {data_cotacao} foi de:  R${valor_moeda}'
 
 
 def selecionar_arquivo():
-    pass
+    caminho_arquivo = askopenfilename(title='Selecione o arquivo de moedas')
+    var_caminhoarquivo.set(caminho_arquivo)
+    if caminho_arquivo:
+        label_arquivoselecionado['text'] = f'Arquivo selecionado {caminho_arquivo}'
 
 
 def atualizar_cotacoes():
-    pass
+    try:
+        #Ler o DF de moedas
+        df = pd.read_excel(var_caminhoarquivo.get())
+        moedas = df.iloc[:,0]
+        # pegar data inicial e final das cotações
+        data_inicial = calendario_datainicial.get()
+        data_final = calendario_datafinal.get()
+        ano_inicial = data_inicial[-4:]
+        mes_inicial = data_inicial[3:5]
+        dia_inicial = data_inicial[:2]
+
+        ano_final = data_final[-4:]
+        mes_final = data_final[3:5]
+        dia_final = data_final[:2]
+
+        for moeda in moedas:
+            link = f'https://economia.awesomeapi.com.br/json/daily/{moeda}-BRL/31?'\
+                   f'start_date={ano_inicial}{mes_inicial}{dia_inicial}&' \
+                   f'end_date={ano_final}{mes_final}{dia_final}'
+
+            requisicao_moeda = requests.get(link)
+            cotacoes = requisicao_moeda.json()
+            for cotacao in cotacoes:
+                timestamp = int(cotacao['timestamp'])
+                bid = float(cotacao['bid'])
+                data = datetime.fromtimestamp(timestamp)
+                data = data.strftime('%d/%m/%Y')
+                if data not in df:
+                    df[data] = np.nan
+
+                df.loc[df.iloc[:, 0] == moeda, data] = bid
+
+        df.to_excel('Testes.xlsx')
+        label_atualizarcotacoes['text'] = 'Arquivo atualizado com sucesso!'
+
+    except:
+        label_atualizarcotacoes['text'] = 'Selecione um arquivo excel no formato correto'
 
 janela = tk.Tk()
 
