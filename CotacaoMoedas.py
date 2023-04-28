@@ -112,6 +112,8 @@ label_selecionararquivo.grid(row=5, column=0, columnspan=2, padx=10, pady=10, st
 botao_selecionararquivo = tk.Button(text='Clique para selecionar', command=selecionar_arquivo)
 botao_selecionararquivo.grid(row=5, column=2, padx=10, pady=10, sticky='nswe')
 
+var_caminhoarquivo = tk.StringVar()
+
 label_arquivoselecionado = tk.Label(text='Nenhum arquivo selecionado', anchor='e')
 label_arquivoselecionado.grid(row=6, column=0, columnspan=3, padx=10, pady=10, sticky='nswe')
 
